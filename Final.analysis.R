@@ -7,6 +7,7 @@ library(phyloseq)
 library(scales)
 library(ggplot2)
 library(dplyr)
+library(RColorBrewer)
 
 # BIOM format from MG-RAST needs to have "type" changed to a compatible term such as "OTU table"
 
@@ -162,24 +163,34 @@ genesOfInterest_ordered <- names(sort(rowMeans(ps_genes_dose_response@otu_table@
 genesOfInterest_BMD_passed_filters_ordered <- names(sort(rowMeans(ps_genes_dose_response2@otu_table@.Data[,1:3])))
 genesOfInterest_BMD_passed_filters_ordered2 <- names(sort(rowMeans(ps_genes_dose_response3@otu_table@.Data[,1:3])))
 
-plot_heatmap(ps_genes_dose_response,
+dr_heatmap1 <- plot_heatmap(ps_genes_dose_response,
              sample.order=row.names(map),
              taxa.order=rev(genesOfInterest_ordered),
              taxa.label="functionalHierarchy4",
              sample.label="Silver_concentration")
-             
-plot_heatmap(ps_genes_dose_response2,
+            
+dr_heatmap1$scales$scales[[1]]$name <- "Silver concentration"
+dr_heatmap1$scales$scales[[2]]$name <- "Gene"
+print(dr_heatmap1)
+ 
+dr_heatmap2 <- plot_heatmap(ps_genes_dose_response2,
              sample.order=row.names(map),
              taxa.order=rev(genesOfInterest_BMD_passed_filters_ordered),
              taxa.label="functionalHierarchy4",
              sample.label="Silver_concentration")
+dr_heatmap2$scales$scales[[1]]$name <- "Silver concentration"
+dr_heatmap2$scales$scales[[2]]$name <- "Gene"
+print(dr_heatmap2)
 
-plot_heatmap(ps_genes_dose_response3,
+dr_heatmap3 <- plot_heatmap(ps_genes_dose_response3,
              sample.order=row.names(map),
              taxa.order=rev(genesOfInterest_BMD_passed_filters_ordered2),
              taxa.label="functionalHierarchy4",
              sample.label="Silver_concentration",
              max.label=300)
+dr_heatmap3$scales$scales[[1]]$name <- "Silver concentration"
+dr_heatmap3$scales$scales[[2]]$name <- "Gene"
+print(dr_heatmap3)
 
 ####################################################################################
 # DESeq2 ###########################################################################
@@ -440,7 +451,7 @@ ggplot(topResults,
   theme(legend.position = "none")
 
 
-#### FIGURE #####
+#### FIGURE 4 #####
 
 topResults$functionalHierarchy4_wrapped <- factor(stringr::str_wrap(topResults$functionalHierarchy4,
                                                                 70),
@@ -589,21 +600,21 @@ plot_heatmap(ps_genes_overlap2,
              sample.label="Silver_concentration") + 
   theme(axis.text.y = element_text(size=14))
 
-#### FIGURE 3 ####
+#### FIGURE - Not used ####
 
-fig3.ord <- ordinate(ps_transformed,
+fig.ord <- ordinate(ps_transformed,
                      method="PCoA",
                      distance="jaccard")
 
-evals <- fig1.ord$values$Eigenvalues
+evals <- fig.ord$values$Eigenvalues
 
-fig3 <- plot_ordination(ps_transformed, fig1.ord,
+fig <- plot_ordination(ps_transformed, fig.ord,
                         color = "Silver_concentration")
 #colnames(fig1$data)[1:2] <- c("PC1", "PC2")
 
-fig3data <- fig3$data
+figdata <- fig$data
 # ggplot(fig3data, aes(x=PC1, y=PC2, color=Silver_Concentration)) +
-fig3 +
+fig +
   geom_point(size=2.5, shape="square") +
   scale_color_manual(values=brewer.pal(8, "Dark2")[c(1,2,5,6)]) +
   coord_fixed(sqrt(evals[2] / evals[1])) +
@@ -636,6 +647,8 @@ plot(rs+1, rmx/rs, log="x")
 BMDvsBMDL <- read.csv("./Best BMD vs Best BMDL.txt", sep="\t", header=T)
 BMDvsBMDL$label <- gsub("\\s.*","",BMDvsBMDL$label)
 
+#### Figure 5A ####
+
 ggplot(BMDvsBMDL, aes(x=x, y=y, label=label)) + 
   geom_point(size=2) +
   theme_bw() +
@@ -654,7 +667,10 @@ genesOfInterest_ordered <- names(sort(rowMeans(ps_genes_dose_response_filt@otu_t
 genesOfInterest_ordered_DF <- ps_genes_dose_response_filt@tax_table@.Data
 write.table(file = "./genesForBMDExpressTable.txt", genesOfInterest_ordered_DF, quote = F, sep="\t")
 
-plot_heatmap(ps_genes_dose_response_filt,
+
+ps_genes_dose_response_filt_BMD_gt_10xlowest <- prune_taxa(dplyr::filter(BMDvsBMDL, BMDvsBMDL$y > 1)$label,
+                                                            ps_transformed)
+plot_heatmap(ps_genes_dose_response_filt_BMD_gt_10xlowest,
              sample.order=row.names(map),
              taxa.order=rev(genesOfInterest_ordered),
              taxa.label="functionalHierarchy4",
